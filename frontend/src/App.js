@@ -56,7 +56,7 @@ function App() {
       >
         <ToastContainer position="bottom-center" limit={1} />
         <header>
-          <Navbar bg="dark" variant="dark" expand="lg">
+          <Navbar bg="dark" variant="dark" expand="lg" style={{ height: '60px' }}>
             <Container>
               <LinkContainer to="/">
                 <Navbar.Brand>
