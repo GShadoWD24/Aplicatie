@@ -71,7 +71,7 @@ function HomeScreen() {
         ) : (
           <Row>
             {products.games.map((game) => (
-              <Col key={game.id} sm={6} md={4} lg={3} className="mb-3">
+              <Col key={game.slug} sm={6} md={4} lg={3} className="mb-3">
                 <Product product={game} />
                 {/* Display other details here */}
                 <img

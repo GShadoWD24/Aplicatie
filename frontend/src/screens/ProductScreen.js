@@ -1,21 +1,83 @@
-import axios from 'axios';
-import { useEffect, useReducer, useState, useRef } from 'react';
+import React, { useReducer, useEffect, useState, useContext, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import ListGroup from 'react-bootstrap/ListGroup';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
-import Rating from '../components/Rating';
-import RatingContainer from '../components/Rating';
 import { Helmet } from 'react-helmet-async';
 import LoadingBox from '../components/LoadingBox';
 import MessageBox from '../components/MessageBox';
 import { getError } from '../utils';
-import { useContext } from 'react';
 import { Store } from '../Store';
 import { toast } from 'react-toastify';
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
+import RatingContainer from '../components/Rating';
+import axios from 'axios';
+
+
+const Rating = ({ rating, caption }) => {
+  return (
+    <div className="rating">
+      <span>
+        <i
+          className={
+            rating >= 1
+              ? 'fa fa-star'
+              : rating >= 0.5
+              ? 'fa fa-star-half-o'
+              : 'fa fa-star-o'
+          }
+        ></i>
+      </span>
+      <span>
+        <i
+          className={
+            rating >= 2
+              ? 'fa fa-star'
+              : rating >= 1.5
+              ? 'fa fa-star-half-o'
+              : 'fa fa-star-o'
+          }
+        ></i>
+      </span>
+      <span>
+        <i
+          className={
+            rating >= 3
+              ? 'fa fa-star'
+              : rating >= 2.5
+              ? 'fa fa-star-half-o'
+              : 'fa fa-star-o'
+          }
+        ></i>
+      </span>
+      <span>
+        <i
+          className={
+            rating >= 4
+              ? 'fa fa-star'
+              : rating >= 3.5
+              ? 'fa fa-star-half-o'
+              : 'fa fa-star-o'
+          }
+        ></i>
+      </span>
+      <span>
+        <i
+          className={
+            rating >= 5
+              ? 'fa fa-star'
+              : rating >= 4.5
+              ? 'fa fa-star-half-o'
+              : 'fa fa-star-o'
+          }
+        ></i>
+      </span>
+      <span>{caption && ` ${caption}`}</span>
+    </div>
+  );
+};
 
 const reducer = (state, action) => {
   switch (action.type) {
@@ -29,17 +91,83 @@ const reducer = (state, action) => {
       return { ...state, loadingCreateReview: false };
     case 'CREATE_FAIL':
       return { ...state, loadingCreateReview: false };
-    case 'REFRESH_PRODUCT':
-      return { ...state, product: action.payload };
     default:
       return state;
-    case 'ADD_TO_FAVORITES':
-      const newItem = action.payload;
-      return {
-        ...state,
-        favorites: [...state.favorites, newItem],
-      };
   }
+};
+
+const ReviewForm = ({ productSlug, userInfo, dispatch, loadingCreateReview }) => {
+  const [rating, setRating] = useState('');
+  const [comment, setComment] = useState('');
+
+  const submitHandler = async (e) => {
+    e.preventDefault();
+
+    if (!comment || !rating) {
+      toast.error('Please enter comment and rating');
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `/api/products/${productSlug}/reviews`,
+        { rating, comment, name: userInfo.name },
+        {
+          headers: { Authorization: `Bearer ${userInfo.token}` },
+        }
+      );
+
+      dispatch({
+        type: 'CREATE_SUCCESS',
+      });
+
+      toast.success('Review submitted successfully');
+
+    } catch (error) {
+      toast.error(error.response.data.error || 'Failed to submit review');
+      dispatch({ type: 'CREATE_FAIL' });
+    }
+  };
+
+  return (
+    <div className="my-3">
+      <form onSubmit={submitHandler}>
+        <Form.Group className="mb-3" controlId="rating">
+          <Form.Label>Rating</Form.Label>
+          <Form.Select
+            aria-label="Rating"
+            value={rating}
+            onChange={(e) => setRating(e.target.value)}
+          >
+            <option value="">Select...</option>
+            <option value="1">1- Poor</option>
+            <option value="2">2- Fair</option>
+            <option value="3">3- Good</option>
+            <option value="4">4- Very good</option>
+            <option value="5">5- Excellent</option>
+          </Form.Select>
+        </Form.Group>
+        <FloatingLabel
+          controlId="floatingTextarea"
+          label="Comments"
+          className="mb-3"
+        >
+          <Form.Control
+            as="textarea"
+            placeholder="Leave a comment here"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+        </FloatingLabel>
+        <div className="mb-3">
+          <Button disabled={loadingCreateReview} type="submit">
+            Submit
+          </Button>
+          {loadingCreateReview && <LoadingBox></LoadingBox>}
+        </div>
+      </form>
+    </div>
+  );
 };
 
 function ProductScreen() {
@@ -52,9 +180,6 @@ function ProductScreen() {
     error: '',
     loadingCreateReview: false,
   });
-
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState('');
 
   const params = useParams();
   const { slug } = params;
@@ -107,7 +232,6 @@ function ProductScreen() {
 
   const addToCartHandler = async () => {
     try {
-  
       // If the item doesn't exist in the cart, add it
       ctxDispatch({
         type: 'CART_ADD_ITEM',
@@ -118,56 +242,10 @@ function ProductScreen() {
           quantity: 1,
         },
       });
-  
-      toast.success('Added to Cart!');
+
     } catch (error) {
       // Handle the error, e.g., show a toast or log the error
       console.error('Error adding to cart:', error);
-    }
-  };
-
-  const submitHandler = async (e) => {
-    e.preventDefault();
-    if (!comment || !rating) {
-      toast.error('Please enter comment and rating');
-      return;
-    }
-    try {
-      const { data } = await axios.post(
-        `/api/products/${product.slug}/reviews`,
-        { rating, comment, name: userInfo.name },
-        {
-          headers: { Authorization: `Bearer ${userInfo.token}` },
-        }
-      );
-
-      dispatch({
-        type: 'CREATE_SUCCESS',
-      });
-      toast.success('Review submitted successfully');
-      // Fetch updated product data after review submission
-      const updatedProductResponse = await fetch(
-        `https://api.rawg.io/api/games/${product.slug}?key=cabf53fd8287462d8ea4cfce5131d226`
-      );
-      const updatedProductData = await updatedProductResponse.json();
-
-      dispatch({
-        type: 'REFRESH_PRODUCT',
-        payload: {
-          ...product,
-          reviews: updatedProductData.results,
-          numReviews: updatedProductData.numReviews,
-          rating: updatedProductData.rating,
-        },
-      });
-
-      window.scrollTo({
-        behavior: 'smooth',
-        top: reviewsRef.current.offsetTop,
-      });
-    } catch (error) {
-      toast.error(getError(error));
-      dispatch({ type: 'CREATE_FAIL' });
     }
   };
 
@@ -186,7 +264,9 @@ function ProductScreen() {
             style={{ maxWidth: '100%', height: 'auto' }}
           />
           <div className="my-3">
-            <Button onClick={() => addToCartHandler(product)}>Add to Favourites</Button>
+            <Button onClick={() => addToCartHandler(product)}>
+              Add to Favourites
+            </Button>
           </div>
         </Col>
         <Col md={7}>
@@ -201,8 +281,8 @@ function ProductScreen() {
               <RatingContainer slug={product.slug} />
             </ListGroup.Item>
             <ListGroup.Item>
-              Description:
-              <p>{product.description}</p>
+              <strong>Description:</strong>
+              <div dangerouslySetInnerHTML={{ __html: product.description }} />
             </ListGroup.Item>
           </ListGroup>
         </Col>
@@ -220,67 +300,21 @@ function ProductScreen() {
                     <strong>{review.user && review.user.username}</strong>
                     <Rating rating={review.rating} caption=" "></Rating>
                     <p>{review.created}</p>
-                    <p>{review.text}</p>
+                    <div dangerouslySetInnerHTML={{ __html: review.text }} />
                   </ListGroup.Item>
                 ))
               ) : (
                 <ListGroup.Item>
-                  <MessageBox>There are no reviews for this product.</MessageBox>
+                  <MessageBox>
+                    There are no reviews for this product.
+                  </MessageBox>
                 </ListGroup.Item>
               )}
             </ListGroup>
           )}
         </div>
         <div className="my-3">
-          {userInfo ? (
-            <div className="my-3">
-              <form onSubmit={submitHandler}>
-                <h2>Write a customer review</h2>
-                <Form.Group className="mb-3" controlId="rating">
-                  <Form.Label>Rating</Form.Label>
-                  <Form.Select
-                    aria-label="Rating"
-                    value={rating}
-                    onChange={(e) => setRating(e.target.value)}
-                  >
-                    <option value="">Select...</option>
-                    <option value="1">1- Poor</option>
-                    <option value="2">2- Fair</option>
-                    <option value="3">3- Good</option>
-                    <option value="4">4- Very good</option>
-                    <option value="5">5- Excellent</option>
-                  </Form.Select>
-                </Form.Group>
-                <FloatingLabel
-                  controlId="floatingTextarea"
-                  label="Comments"
-                  className="mb-3"
-                >
-                  <Form.Control
-                    as="textarea"
-                    placeholder="Leave a comment here"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                  />
-                </FloatingLabel>
-
-                <div className="mb-3">
-                  <Button disabled={loadingCreateReview} type="submit">
-                    Submit
-                  </Button>
-                  {loadingCreateReview && <LoadingBox></LoadingBox>}
-                </div>
-              </form>
-            </div>
-          ) : (
-            <MessageBox>
-              Please{' '}
-              <Link to={`/signin?redirect=/product/${product.slug}`}>
-                Sign In
-              </Link>{' '}
-              to write a review
-            </MessageBox>
-          )}
+          
         </div>
       </div>
     </div>

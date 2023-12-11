@@ -1,39 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function Rating(props) {
-  const { rating, numReviews } = props;
-
-  if (!rating) {
-    // Loading state or handle errors
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="rating">
-      {[...Array(5)].map((_, index) => (
-        <span key={index}>
-          <i
-            className={
-              rating >= index + 1
-                ? 'fas fa-star'
-                : rating >= index + 0.5
-                ? 'fas fa-star-half-alt'
-                : 'far fa-star'
-            }
-          />
-        </span>
-      ))}
-      <span>{' ' + numReviews + ' reviews'}</span>
-    </div>
-  );
-}
-
 function RatingContainer({ slug }) {
-  const [ratingData, setRatingData] = useState({
-    rating: 0,
-    numReviews: 0,
-  });
+  const [rating, setRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [randomRating, setRandomRating] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -42,23 +15,43 @@ function RatingContainer({ slug }) {
           `https://api.rawg.io/api/games/${slug}?key=cabf53fd8287462d8ea4cfce5131d226`
         );
 
-        const { rating, ratings_count: numReviews } = response.data;
+        console.log('RAWG API response:', response);
 
-        setRatingData({
-          rating: rating || 0,
-          numReviews: numReviews || 0,
-        });
+        const { rating, ratings_count: reviewCount } = response.data;
+
+        if (rating !== null && typeof rating === 'number') {
+          setRating(rating);
+          setReviewCount(reviewCount || 0); // Set review count to 0 if it's not provided
+          setLoading(false);
+        } else {
+          setRating(0);
+          setReviewCount(0);
+          setLoading(false);
+        }
       } catch (error) {
         console.error('Error fetching rating:', error);
-        // Set default data in case of an error
-        setRatingData({ rating: 0, numReviews: 0 });
+        setError('Error fetching rating data.');
+        setLoading(false);
       }
     };
 
-    fetchData();
-  }, [slug]);
+    if (randomRating === null) {
+      // Generate a random number between 1 and 100 only once
+      setRandomRating(Math.floor(Math.random() * 5) + 1);
+    }
 
-  return <Rating {...ratingData} />;
+    fetchData();
+  }, [slug, randomRating]);
+
+  return loading ? (
+    <div>Loading...</div>
+  ) : error ? (
+    <div>Error fetching rating: {error}</div>
+  ) : (
+    <div>
+      <strong>Rating:</strong> {randomRating}
+    </div>
+  );
 }
 
 export default RatingContainer;
