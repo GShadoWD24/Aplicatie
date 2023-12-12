@@ -15,8 +15,7 @@ export default function SearchBox() {
       // Directly navigate to the specific game using the entered slug
       navigate(`/product/${slug}`);
     } else {
-      // Handle the case when no slug is entered
-      navigate('/search');
+      
     }
   };
 

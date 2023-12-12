@@ -313,8 +313,7 @@ function ProductScreen() {
             </ListGroup>
           )}
         </div>
-        <div className="my-3">
-          
+        <div className="my-3"> 
         </div>
       </div>
     </div>
