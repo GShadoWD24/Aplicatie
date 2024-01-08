@@ -1,17 +1,13 @@
 // models/Review.js
 import mongoose from 'mongoose';
 
-const reviewSchema = new mongoose.Schema(
-  {
-    rating: { type: Number, required: true },
-    comment: { type: String, required: true },
-    name: { type: String, required: true },
-    productSlug: { type: String, required: true },
-  },
-  {
-    timestamps: true,
-  }
-);
+const reviewSchema = new mongoose.Schema({
+  productSlug: String,
+  rating: Number,
+  comment: String,
+  userName: String,
+  // Add other necessary fields
+});
 
 const Review = mongoose.model('Review', reviewSchema);
 
